@@ -1,0 +1,47 @@
+name: Update GFWList Domains
+
+on:
+  # 1. 每日北京时间 06:00 = UTC 22:00
+  schedule:
+    - cron: "0 22 * * *"
+
+  # 2. 手动触发（可在 GitHub Actions 页面点击 Run workflow）
+  workflow_dispatch:
+
+  # 3. 有上传（push）触发，排除输出文件避免自动提交引发循环触发
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "gfwlist_domains.txt"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run jiexigfw.py
+        run: python jiexigfw.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gfwlist_domains.txt
+          if git diff --staged --quiet; then
+            echo "gfwlist_domains.txt has no changes."
+          else
+            git commit -m "chore: update gfwlist_domains.txt"
+            git push
+          fi
